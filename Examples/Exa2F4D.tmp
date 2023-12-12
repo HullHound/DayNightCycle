@@ -1,0 +1,87 @@
+[gd_scene load_steps=13 format=3 uid="uid://djc48fuwnk8ds"]
+
+[ext_resource type="Script" path="res://Examples/TestScript.gd" id="1_pe3le"]
+[ext_resource type="PackedScene" uid="uid://dixkqrp22j0rb" path="res://Examples/Models/Landscape.glb" id="1_v5tdo"]
+[ext_resource type="Script" path="res://Nodes/DayNightCycleNode.gd" id="3_dsyko"]
+[ext_resource type="Script" path="res://Nodes/LightColorTransitionNode.gd" id="3_pdyrb"]
+[ext_resource type="Script" path="res://Nodes/SampledObjectRotatorNode.gd" id="4_e1rb3"]
+[ext_resource type="Script" path="res://Nodes/TimeHandler.gd" id="6_oll3e"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vunho"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_q7yk4"]
+sky_material = SubResource("ProceduralSkyMaterial_vunho")
+
+[sub_resource type="Environment" id="Environment_i7gk3"]
+background_energy_multiplier = 2.5
+sky = SubResource("Sky_q7yk4")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="FogMaterial" id="FogMaterial_prtng"]
+
+[sub_resource type="Gradient" id="Gradient_vxrx0"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0, 0.251429, 0.462857, 0.657143, 1)
+colors = PackedColorArray(0.4, 0.4, 0.4, 1, 0.81, 0.53784, 0.2268, 1, 0.769032, 0.731404, 0.686062, 1, 0.81, 0.53784, 0.2268, 1, 0.4, 0.4, 0.4, 1)
+
+[sub_resource type="Curve" id="Curve_qrjkm"]
+max_value = 360.0
+_data = [Vector2(0, 0), 0.0, 360.0, 0, 1, Vector2(1, 360), 360.0, 0.0, 1, 0]
+point_count = 2
+
+[node name="Example" type="Node3D"]
+script = ExtResource("1_pe3le")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 7.9823, -1.79403)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_i7gk3")
+
+[node name="Landscape" parent="." instance=ExtResource("1_v5tdo")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.258819, 0, 0.965926, 0, 1, 0, -0.965926, 0, 0.258819, 10, 3, -1)
+fov = 70.0
+
+[node name="FogVolume" type="FogVolume" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00726032, -4.31907, -0.0502739)
+visible = false
+size = Vector3(1000, 6, 1000)
+material = SubResource("FogMaterial_prtng")
+
+[node name="FogVolume2" type="FogVolume" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90.932, -4.319, 100)
+visible = false
+size = Vector3(100, 200, 5000)
+material = SubResource("FogMaterial_prtng")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.98481, 5.41194, -4.34768)
+light_color = Color(1, 1, 0.196078, 1)
+
+[node name="DayNightCycleNode" type="Node" parent="."]
+script = ExtResource("3_dsyko")
+
+[node name="DayCycleLightColorTransitionNode" type="Node" parent="DayNightCycleNode" node_paths=PackedStringArray("light")]
+script = ExtResource("3_pdyrb")
+light = NodePath("../../DirectionalLight3D")
+color_gradient = SubResource("Gradient_vxrx0")
+
+[node name="SampledObjectRotatorNode" type="Node" parent="DayNightCycleNode" node_paths=PackedStringArray("target_node")]
+script = ExtResource("4_e1rb3")
+x_rotation_curve = SubResource("Curve_qrjkm")
+target_node = NodePath("../../DirectionalLight3D")
+
+[node name="TimeHandler" type="Node" parent="DayNightCycleNode"]
+script = ExtResource("6_oll3e")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[connection signal="time_changed" from="DayNightCycleNode/TimeHandler" to="." method="_on_time_handler_time_changed"]

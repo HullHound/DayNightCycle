@@ -1,0 +1,106 @@
+[gd_scene load_steps=16 format=3 uid="uid://djc48fuwnk8ds"]
+
+[ext_resource type="Script" path="res://Examples/ExampleScript.gd" id="1_mt1rp"]
+[ext_resource type="PackedScene" uid="uid://dixkqrp22j0rb" path="res://Examples/Models/Landscape.glb" id="1_v5tdo"]
+[ext_resource type="Script" path="res://Nodes/DayNightCycleNode.gd" id="3_dsyko"]
+[ext_resource type="Script" path="res://Nodes/LightColorTransitionNode.gd" id="3_pdyrb"]
+[ext_resource type="Script" path="res://Nodes/SampledObjectRotatorNode.gd" id="4_e1rb3"]
+[ext_resource type="Script" path="res://Nodes/LightIntensityTransitionNode.gd" id="6_cqs2a"]
+[ext_resource type="Script" path="res://Nodes/TimeHandler.gd" id="6_oll3e"]
+
+[sub_resource type="Gradient" id="Gradient_vxrx0"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0.0976563, 0.183594, 0.462857, 0.855469, 0.925781)
+colors = PackedColorArray(0.197937, 0.197937, 0.197937, 1, 0.81, 0.53784, 0.2268, 1, 0.769032, 0.731404, 0.686062, 1, 0.81, 0.53784, 0.2268, 1, 0.196078, 0.196078, 0.196078, 1)
+
+[sub_resource type="Curve" id="Curve_qrjkm"]
+max_value = 360.0
+_data = [Vector2(0, 0), 0.0, 360.0, 0, 1, Vector2(1, 360), 360.0, 0.0, 1, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_h736p"]
+_data = [Vector2(0, 0.5), 0.0, 0.0, 0, 1, Vector2(1, 0.5), 0.0, 0.0, 1, 0]
+point_count = 2
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vunho"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_q7yk4"]
+sky_material = SubResource("ProceduralSkyMaterial_vunho")
+
+[sub_resource type="Environment" id="Environment_i7gk3"]
+sky = SubResource("Sky_q7yk4")
+ambient_light_energy = 0.25
+tonemap_mode = 2
+ssr_enabled = true
+ssao_enabled = true
+ssao_intensity = 1.0
+ssil_enabled = true
+ssil_intensity = 0.1
+sdfgi_enabled = true
+glow_enabled = true
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_dwuop"]
+flip_faces = true
+size = Vector2(200, 200)
+
+[sub_resource type="LabelSettings" id="LabelSettings_fyt13"]
+outline_size = 5
+outline_color = Color(0, 0, 0, 1)
+shadow_size = 6
+
+[node name="Example" type="Node3D"]
+script = ExtResource("1_mt1rp")
+
+[node name="DayNightCycleNode" type="Node" parent="."]
+script = ExtResource("3_dsyko")
+
+[node name="LightColorTransitionNode" type="Node" parent="DayNightCycleNode" node_paths=PackedStringArray("light")]
+script = ExtResource("3_pdyrb")
+light = NodePath("../../DirectionalLight3D")
+color_gradient = SubResource("Gradient_vxrx0")
+
+[node name="SampledObjectRotatorNode" type="Node" parent="DayNightCycleNode" node_paths=PackedStringArray("target_node")]
+script = ExtResource("4_e1rb3")
+x_rotation_curve = SubResource("Curve_qrjkm")
+target_node = NodePath("../../DirectionalLight3D")
+
+[node name="TimeHandler" type="Node" parent="DayNightCycleNode"]
+script = ExtResource("6_oll3e")
+day_length_seconds = 10.0
+
+[node name="LightIntensityTransitionNode" type="Node" parent="DayNightCycleNode" node_paths=PackedStringArray("light")]
+script = ExtResource("6_cqs2a")
+intensity_curve = SubResource("Curve_h736p")
+light = NodePath("../../DirectionalLight3D")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 7.9823, -1.79403)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_i7gk3")
+
+[node name="Landscape" parent="." instance=ExtResource("1_v5tdo")]
+
+[node name="Floor" type="MeshInstance3D" parent="Landscape"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -9.17831, 0)
+mesh = SubResource("PlaneMesh_dwuop")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.0932705, -0.368206, 0.925054, 0, 0.929104, 0.369818, -0.995641, -0.0344931, 0.086658, 10, 7, -1)
+fov = 70.0
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.98481, 5.41194, -4.34768)
+light_color = Color(1, 1, 0.196078, 1)
+
+[node name="ClockLabel" type="Label" parent="."]
+offset_left = 15.0
+offset_top = 12.0
+offset_right = 55.0
+offset_bottom = 35.0
+label_settings = SubResource("LabelSettings_fyt13")
+
+[connection signal="time_changed" from="DayNightCycleNode" to="." method="_on_time_changed"]
